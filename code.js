@@ -1,4 +1,18 @@
+drawVecs = Object;
+
 addEventListener('load', function(e) {
+    const canvas = document.querySelector('#drawCanvas');
+
+    drawVecs.Vd = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>d</sub>', 0.5);
+    drawVecs.Vu = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>u</sub>', 0.3);
+    drawVecs.Veff = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>eff</sub>', 0.3);
+
+    drawVecs.L = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', 'Auftrieb', 1.05);
+    drawVecs.D = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', 'Widerstand', 1.05);
+    drawVecs.Ra = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'green', 'Resultierende', 1.05);
+    drawVecs.S = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', 'Schub', 1.05);
+    drawVecs.T = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', 'Tangentialkraft', 1.05);
+
     draw();
   });
   
@@ -10,7 +24,7 @@ function draw() {
     rotIn = +document.querySelector('#angleInput').value;
     rot = rotIn/180*Math.PI;
 
-    center = [400, 300];
+    center = new Vector(400, 300);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawAirfoil(ctx, center, rot, 4);
@@ -31,74 +45,50 @@ function draw() {
     ctx.strokeStyle = 'grey';
 
     // draw velocities
-    velScale = 3;
+    let velScale = 3;
 
-    Vu = +document.querySelector('#VuInput').value;
-    VuPx = Vu * velScale;
-    ctx.strokeStyle = 'blue';
-    ctx.beginPath();
-    VuStartX = center[0]-VuPx;
-    canvas_arrow(ctx, VuStartX, center[1], center[0], center[1]);
-    ctx.stroke();
+    /// get inputs
+    let VuTrue = +document.querySelector('#VuInput').value;
+    let VdTrue = +document.querySelector('#VdInput').value;
 
-    Vd = +document.querySelector('#VdInput').value;
-    VdPx = Vd * velScale;
-    ctx.strokeStyle = 'blue';
-    ctx.beginPath();
-    VuStartY = center[1]+VdPx;
-    canvas_arrow(ctx, VuStartX, VuStartY, VuStartX, center[1]);
-    ctx.stroke();
+    /// create vectors
+    let Vu = new Vector(VuTrue * velScale, 0);
+    let Vd = new Vector(0, VdTrue * velScale);
+    let Veff = Vu.add(Vd);
 
-    ctx.strokeStyle = 'blue';
-    ctx.beginPath();
-    VuStartY = center[1]+VdPx;
-    canvas_arrow(ctx, VuStartX, VuStartY, center[0], center[1]);
-    ctx.stroke();
-
-    //let VeffTxt = document.querySelector('#veff_text');
-    canvasPos = canvas.getBoundingClientRect();
-    vVeff = new Vector(center[0] - VuStartX, center[1] - VuStartY);
-    vCenter = new Vector(canvasPos.left + center[0], canvasPos.top + center[1]);
-    textPos = vCenter.subtract(vVeff.mult(1/2));
-    b = new Vector(3,5);
-
-    let VeffTxt = document.getElementById('veff_text');
-    VeffTxt.style.position = "absolute";
-    
-    VeffTxt.style.left = textPos[0] + 'px';
-    VeffTxt.style.top = textPos[1] - 20 + 'px';
+    /// draw vectors
+    drawVecs.Vu.newVectorValues(center.add(Vu.mult(-1)), Vu);
+    drawVecs.Vd.newVectorValues(center.add(Veff.mult(-1)), Vd);
+    drawVecs.Veff.newVectorValues(center.add(Veff.mult(-1)), Veff);
 
 
     // draw forces
-    eps = 4; // A/W
-    scale = 50;
-    Veff = [center[0]-VuStartX, center[1]-VuStartY];
-    Veff_norm = Math.sqrt(Veff[0]*Veff[0] + Veff[1]*Veff[1]);
-    xa = Veff.map((x) => x/Veff_norm);
+    let eps = 4; // A/W
+    let forceScale = 50;
 
-    W = xa.map((x) => scale*x);
-    drawVector(ctx, center, W, 'cyan');
+    /// create Vectors
+    let xa = Veff.normalized();
+    let ya = new Vector(xa[1], -xa[0]);
+    
+    let D = xa.mult(forceScale);
+    let L = ya.mult(forceScale * eps);
+    let Ra = D.add(L);
+    let S = new Vector(0, Ra[1]) ; // Thrust
+    let T = new Vector(Ra[0], 0) ; // Tangent Force
 
-    ya = [xa[1], -xa[0]];
-    A = ya.map((x) => scale*eps*x);
-    drawVector(ctx, center, A, 'cyan');
+    // draw vectors
+    drawVecs.D.newVectorValues(center, D);
+    drawVecs.L.newVectorValues(center, L);
+    drawVecs.Ra.newVectorValues(center, Ra);
+    drawVecs.S.newVectorValues(center, S);
+    drawVecs.T.newVectorValues(center, T);
 
-    // helper lines
-    Aend = [center[0]+A[0], center[1]+A[1]];
-    drawVectorNoArrow(ctx, Aend, W, 'grey');
-    Wend = [center[0]+W[0], center[1]+W[1]];
-    drawVectorNoArrow(ctx, Wend, A, 'grey');
+    /// helper lines
+    drawVectorNoArrow(ctx, center.add(L), D, 'grey');
+    drawVectorNoArrow(ctx, center.add(D), L, 'grey');
 
-    Ra = [W[0]+A[0], W[1]+A[1]];
-    drawVector(ctx, center, Ra, 'green');
-
-    // Forces in blade frame
-    Ra_end = [center[0]+Ra[0], center[1]+Ra[1]];
-    drawVectorNoArrow(ctx, Ra_end, [0, -Ra[1]], 'grey');
-    drawVectorNoArrow(ctx, Ra_end, [-Ra[0], 0], 'grey');
-
-    drawVector(ctx, center, [0, Ra[1]], 'red');
-    drawVector(ctx, center, [Ra[0], 0], 'red');
+    drawVectorNoArrow(ctx, center.add(Ra), [0, -Ra[1]], 'grey');
+    drawVectorNoArrow(ctx, center.add(Ra), [-Ra[0], 0], 'grey');
 }
 
 function drawVector(ctx, startPos, vec, color)
@@ -170,6 +160,47 @@ class Vector extends Array {
     }
     mult(num) {
         return this.map((e) => e * num);
+    }
+    norm() {
+        return Math.sqrt( this.reduce((prev, x) => x*x + prev, 0) );
+    }
+    normalized() {
+        return this.mult( 1/this.norm() );
+    }
+}
+
+class DrawableVector {
+    constructor(canvas, startPos, vector, color, text, textPos) {
+        this.canvas = canvas;
+        this.startPos = startPos;
+        this.vector = vector;
+        this.color = color;
+        this.text = text;
+        this.textPos = textPos;
+
+        let canvasPos = canvas.getBoundingClientRect();
+        this.canvasPosVec = new Vector(canvasPos.left, canvasPos.top);
+
+        this.textEl = document.createElement('div');
+        this.textEl.innerHTML = text;
+        this.textEl.style.position = 'absolute';
+        this.textEl.style.color = color;
+        canvas.parentElement.appendChild(this.textEl);
+
+        this.newVectorValues(startPos, vector);
+    }
+
+    newVectorValues(startPos, vector) {
+        this.startPos = startPos;
+        this.vector = vector;
+
+        let textPos = this.canvasPosVec.add(startPos).add(vector.mult(this.textPos));
+        //let textPos = this.canvasPosVec;
+        this.textEl.style.left = textPos[0] + 5 + 'px';
+        this.textEl.style.top = textPos[1]  - 20 + 'px';
+
+        //console.log(this.canvasPosVec, startPos, vector, textPos)
+        drawVector(this.canvas.getContext('2d'), startPos, vector, this.color);
     }
 }
 

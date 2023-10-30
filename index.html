@@ -20,13 +20,11 @@
     <label>Umfangsgeschwindigkeit</label>
   </div>
   <div>
-    <input type="range" id="VdInput" min=-50 max=50 value="-25" oninput="draw()"/>
+    <input type="range" id="VdInput" min=-50 max=50 value="25" oninput="draw()"/>
     <label>Abwärtsgeschwindigkeit </label>
   </div>
 
   <script src="./code.js"></script>
-
-  <div id="veff_text"><i>V</i><sub>eff</sub></div>
 
   <canvas id="drawCanvas" width="800" height="500" style="border:1px solid black"></canvas>
 
