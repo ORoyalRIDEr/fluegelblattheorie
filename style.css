@@ -1,0 +1,8 @@
+#settings > div{
+    display: inline-block;
+    padding: 10px;
+}
+
+.showValue {
+    width: 50px;
+}

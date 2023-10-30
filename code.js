@@ -7,11 +7,11 @@ addEventListener('load', function(e) {
     drawVecs.Vu = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>u</sub>', 0.3);
     drawVecs.Veff = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>eff</sub>', 0.3);
 
-    drawVecs.L = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', 'Auftrieb', 1.05);
-    drawVecs.D = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', 'Widerstand', 1.05);
-    drawVecs.Ra = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'green', 'Resultierende', 1.05);
-    drawVecs.S = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', 'Schub', 1.05);
-    drawVecs.T = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', 'Tangentialkraft', 1.05);
+    drawVecs.L = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>A</sub>', 1.05);
+    drawVecs.D = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>W</sub>', 1.05);
+    drawVecs.Ra = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'green', '<i>F</i><sub>res</sub>', 1.05);
+    drawVecs.S = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', '<i>F</i><sub>S</sub>', 1.05);
+    drawVecs.T = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', '<i>F</i><sub>T</sub>', 1.05);
 
     draw();
   });
@@ -21,35 +21,27 @@ function draw() {
     const ctx = canvas.getContext('2d');
     ctx.strokeStyle = 'black';
 
-    rotIn = +document.querySelector('#angleInput').value;
-    rot = rotIn/180*Math.PI;
+    AOIdeg = +document.getElementById('AOI').querySelector('input').value; // angle of incident
+    document.getElementById('AOI').querySelector('.showValue').value = AOIdeg + '°';
+    AOI = AOIdeg/180*Math.PI;
 
-    center = new Vector(400, 300);
+    center = new Vector(500, 300);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawAirfoil(ctx, center, rot, 4);
+    drawAirfoil(ctx, center, AOI, 4);
 
     // draw reference lines
-    ctx.strokeStyle = 'grey';
-
-    ctx.beginPath();
-    ctx.moveTo(center[0], 0);
-    ctx.lineTo(center[0], canvas.height);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'grey';
-    ctx.beginPath();
-    ctx.moveTo(0, center[1]);
-    ctx.lineTo(canvas.width, center[1]);
-    ctx.stroke();
-    ctx.strokeStyle = 'grey';
+    drawLine(ctx, [center[0], 0], [center[0], canvas.height], 'grey');
+    drawLine(ctx, [0, center[1]], [canvas.width, center[1]], 'grey');
 
     // draw velocities
     let velScale = 3;
 
     /// get inputs
-    let VuTrue = +document.querySelector('#VuInput').value;
-    let VdTrue = +document.querySelector('#VdInput').value;
+    let VuTrue = +document.getElementById('VuInput').querySelector('input').value;
+    let VdTrue = +document.getElementById('VdInput').querySelector('input').value;
+    document.getElementById('VuInput').querySelector('.showValue').value = VuTrue + ' m/s';
+    document.getElementById('VdInput').querySelector('.showValue').value = VdTrue + ' m/s';
 
     /// create vectors
     let Vu = new Vector(VuTrue * velScale, 0);
@@ -61,6 +53,18 @@ function draw() {
     drawVecs.Vd.newVectorValues(center.add(Veff.mult(-1)), Vd);
     drawVecs.Veff.newVectorValues(center.add(Veff.mult(-1)), Veff);
 
+    /// draw angle of attack
+    xb = new Vector(-Math.cos(AOI), -Math.sin(AOI));
+    drawVectorNoArrow(ctx, center, xb.mult(500), 'grey');
+    drawVectorNoArrow(ctx, center, xb.mult(500).mult(-1), 'grey');
+
+    alphaW = Math.atan2(VdTrue, VuTrue);
+    ctx.strokeStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(center[0], center[1], Veff.norm()*0.8, Math.PI + alphaW, Math.PI + AOI, (alphaW > AOI));
+    ctx.stroke();
+    AOA = AOI - alphaW;
+    document.getElementById('AOA').value = Math.round(AOA*180/Math.PI * 100) / 100 + '°';
 
     // draw forces
     let eps = 4; // A/W
@@ -101,10 +105,16 @@ function drawVector(ctx, startPos, vec, color)
 
 function drawVectorNoArrow(ctx, startPos, vec, color)
 {
+    endPos = [startPos[0] + vec[0], startPos[1] + vec[1]];
+    drawLine(ctx, startPos, endPos, color)
+}
+
+function drawLine(ctx, start, end, color)
+{
     ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.moveTo(startPos[0], startPos[1]);
-    ctx.lineTo(startPos[0] + vec[0], startPos[1] + vec[1]);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(end[0], end[1]);
     ctx.stroke();
 }
 

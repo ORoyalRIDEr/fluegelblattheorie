@@ -5,23 +5,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width" />
   <title>Flügelblatttheorie</title>
-  <!--<link rel="stylesheet" href="style.css" />-->
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
   <h1>Flügelblatttheorie</h1>
   
-  <div>
-    <input type="range" id="angleInput" min=-40 max=40 oninput="draw()"/>
-    <label>Einstellwinkel</label>
-  </div>
-  <div>
-    <input type="range" id="VuInput" min=0 max=200 value="75" oninput="draw()"/>
-    <label>Umfangsgeschwindigkeit</label>
-  </div>
-  <div>
-    <input type="range" id="VdInput" min=-50 max=50 value="25" oninput="draw()"/>
-    <label>Abwärtsgeschwindigkeit </label>
+  <div id="settings">
+    <div>
+      <div id="AOI">
+        <input type="range" min=-40 max=40 value="15" oninput="draw()"/>
+        <input disabled class="showValue"/>
+        <label>Einstellwinkel</label>
+      </div>
+      <div id="VuInput">
+        <input type="range" min=0 max=200 value="120" oninput="draw()"/>
+        <input disabled class="showValue"/>
+        <label>Umfangsgeschwindigkeit</label>
+      </div>
+      <div id="VdInput">
+        <input type="range" min=-10 max=50 value="10" oninput="draw()"/>
+        <input disabled class="showValue"/>
+        <label>Abwärtsgeschwindigkeit </label>
+      </div>
+    </div>
+    
+    <div>
+      <div>
+        <input disabled class="showValue" id="AOA"/>
+        <label>Anstellwinkel</label>
+      </div>
+    </div>
   </div>
 
   <script src="./code.js"></script>
