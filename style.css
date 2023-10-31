@@ -3,6 +3,10 @@
     padding: 10px;
 }
 
+input[type="range"] {
+    width: 200px;
+}
+
 .showValue {
     width: 50px;
 }
