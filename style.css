@@ -10,3 +10,11 @@ input[type="range"] {
 .showValue {
     width: 50px;
 }
+
+canvas {
+    border:1px solid black;
+}
+
+#diagrams > div {
+    display: inline-block;
+}

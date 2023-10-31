@@ -1,17 +1,23 @@
-drawVecs = Object;
+drawVecs = new Object;
+diags = new Object;
 
 addEventListener('load', function(e) {
-    const canvas = document.querySelector('#drawCanvas');
+    const canvasFig = document.querySelector('#drawCanvas');
+    const canvasDiagCL_AOA = document.querySelector('#CL_AOA').querySelector('canvas');
+    const canvasDiagCL_CD = document.querySelector('#CL_CD').querySelector('canvas');
 
-    drawVecs.Vd = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>d</sub>', 0.5);
-    drawVecs.Vu = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>u</sub>', 0.3);
-    drawVecs.Veff = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>eff</sub>', 0.3);
+    drawVecs.Vd = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>d</sub>', 0.7);
+    drawVecs.Vu = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>u</sub>', 0.3);
+    drawVecs.Veff = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>eff</sub>', 0.3);
 
-    drawVecs.L = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>A</sub>', 1.05);
-    drawVecs.D = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>W</sub>', 1.05);
-    drawVecs.Ra = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'green', '<i>F</i><sub>res</sub>', 1.05);
-    drawVecs.S = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', '<i>F</i><sub>S</sub>', 1.05);
-    drawVecs.T = new DrawableVector(canvas, new Vector(0,0), new Vector(0,0), 'red', '<i>F</i><sub>T</sub>', 1.05);
+    drawVecs.L = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>A</sub>', 1.05);
+    drawVecs.D = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>W</sub>', 1.05);
+    drawVecs.Ra = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'green', '<i>F</i><sub>res</sub>', 1.05);
+    drawVecs.S = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'red', '<i>F</i><sub>S</sub>', 1.05);
+    drawVecs.T = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'red', '<i>F</i><sub>T</sub>', 1.05);
+
+    diags.CL_AOA = new Diagram(canvasDiagCL_AOA, [-26, 26], [-1.6, 1.6], 2, 0.2)
+    diags.CL_CD = new Diagram(canvasDiagCL_CD, [-0.08, 0.24], [-1.6, 1.6], 0.04, 0.2)
 
     draw();
   });
@@ -25,7 +31,7 @@ function draw() {
     document.getElementById('AOI').querySelector('.showValue').value = AOIdeg + '°';
     AOI = AOIdeg/180*Math.PI;
 
-    center = new Vector(500, 300);
+    center = new Vector(600, 300);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawAirfoil(ctx, center, AOI, 4);
@@ -122,6 +128,17 @@ function draw() {
 
     drawVectorNoArrow(ctx, center.add(Ra), [0, -Ra[1]], 'grey');
     drawVectorNoArrow(ctx, center.add(Ra), [-Ra[0], 0], 'grey');
+
+    // draw diagrams
+    let airfoilDataAll = getAirfoilData();
+    AOAplt = airfoilDataAll.reduce((list, newEl) => list.concat(newEl[0]), []);
+    CLplt = airfoilDataAll.reduce((list, newEl) => list.concat(newEl[1]), []);
+    CDplt = airfoilDataAll.reduce((list, newEl) => list.concat(newEl[2]), []);
+
+    diags.CL_AOA.plot(AOAplt, CLplt, 'green');
+    diags.CL_AOA.setMarker(AOA / Math.PI*180, CL, 'red');
+    diags.CL_CD.plot(CDplt, CLplt, 'green');
+    diags.CL_CD.setMarker(CD, CL, 'red');
 }
 
 function drawVector(ctx, startPos, vec, color)
@@ -193,7 +210,7 @@ function interp1_piecewise_linear(data, x)
         // Use the equation for the line passing through 
         // (ts[i], ys[i]) and (ts[i+1], ys[i+1])
         let a = (x - data[i][0]) / (data[i+1][0] - data[i][0]);
-        return data[i].map( (value, index) => a*value + (1-a)*data[i+1][index] )
+        return data[i].map( (value, index) => (1-a)*value + a*data[i+1][index] )
       }
     }
   }
@@ -251,8 +268,9 @@ class DrawableVector {
         this.text = text;
         this.textPos = textPos;
 
-        let canvasPos = canvas.getBoundingClientRect();
-        this.canvasPosVec = new Vector(canvasPos.left, canvasPos.top);
+        let canvasData = canvas.getBoundingClientRect();
+        let bodyData = document.body.getBoundingClientRect();
+        this.canvasPosVec = new Vector(canvasData.left - bodyData.left, canvasData.top - bodyData.top);
 
         this.textEl = document.createElement('div');
         this.textEl.innerHTML = text;
@@ -269,15 +287,135 @@ class DrawableVector {
 
         let textPos = this.canvasPosVec.add(startPos).add(vector.mult(this.textPos));
         //let textPos = this.canvasPosVec;
-        this.textEl.style.left = textPos[0] + 5 + 'px';
-        this.textEl.style.top = textPos[1]  - 20 + 'px';
+        this.textEl.style.left = textPos[0] + 10 + 'px';
+        this.textEl.style.top = textPos[1]  + 'px';
 
         //console.log(this.canvasPosVec, startPos, vector, textPos)
         drawVector(this.canvas.getContext('2d'), startPos, vector, this.color);
     }
 }
 
+class Diagram {
+    constructor(canvas, xlim, ylim, xticks, yticks) {
+        let canvasData = canvas.getBoundingClientRect();
+        let bodyData = document.body.getBoundingClientRect();
+        this.canvasSize = [canvasData.width, canvasData.height];
+        this.canvasPos = new Vector(canvasData.left - bodyData.left, canvasData.top - bodyData.top);
 
+        this.xrange = xlim[1] - xlim[0];
+        this.yrange = ylim[1] - ylim[0];
+        this.p0t = new Vector(
+            -xlim[0] / this.xrange * this.canvasSize[0],
+            ylim[1] / this.yrange * this.canvasSize[1]
+        );
+
+        this.canvas = canvas;
+        this.xlim = xlim;
+        this.ylim = ylim;
+
+        // convert ticks
+        if (typeof xticks === 'number') {
+            let nTicks = Math.round(this.xrange / xticks);
+            this.xticks = [...Array(nTicks).keys()].map((x) => x*xticks + xlim[0]);
+        }
+        else {
+            this.xticks = xticks;
+        }
+
+        if (typeof yticks === 'number') {
+            let nTicks = Math.round(this.yrange / yticks);
+            this.yticks = [...Array(nTicks).keys()].map((x) => x*yticks + ylim[0]);
+        }
+        else {
+            this.yticks = yticks;
+        }
+
+
+        // write ticks on canvas
+        for (let dir of ['x', 'y']) {
+            let ticks = dir == 'x' ? this.xticks : this.yticks;
+
+            for (let tick of ticks) {
+                let divPosInCanvas = dir == 'x' ? this.unit2px([tick,0]) : this.unit2px([0, tick]);
+                let divPos = this.canvasPos.add(divPosInCanvas);
+                let textEl = document.createElement('div');
+                textEl.innerHTML = Number(tick.toFixed(2));
+                textEl.style.position = 'absolute';
+                textEl.style.top = divPos[1] + 'px';
+                textEl.style.left = divPos[0] + 'px';
+                this.canvas.parentElement.appendChild(textEl);
+            }
+        }
+
+        this.draw();
+    }
+
+    unit2px(unit) {
+        return new Vector(
+            unit[0]  / this.xrange * this.canvasSize[0] + this.p0t[0],
+            -unit[1] / this.yrange * this.canvasSize[1] + this.p0t[1],
+        );
+    }
+
+    draw() {
+        let ctx = this.canvas.getContext('2d');
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // draw axis
+        drawLine(this.canvas.getContext('2d'), [0, this.p0t[1]], [this.canvasSize[0], this.p0t[1]], 'black');
+        drawLine(this.canvas.getContext('2d'), [this.p0t[0], 0], [this.p0t[0], this.canvasSize[1]], 'black');
+
+        // draw ticks
+        const tickLen = 10;
+        
+        for (let tick of this.xticks) {
+            let tickLenUnit = tickLen * this.yrange / this.canvasSize[1];
+            drawLine(ctx, this.unit2px([tick,-tickLenUnit/2]), this.unit2px([tick,tickLenUnit/2]), 'black');
+        }
+
+        for (let tick of this.yticks) {
+            let tickLenUnit = tickLen * this.xrange / this.canvasSize[0];
+            drawLine(ctx, this.unit2px([-tickLenUnit/2, tick]), this.unit2px([tickLenUnit/2, tick]), 'black');
+        }
+    }
+
+    plot(x, y, color) {
+        this.draw();
+
+        let ctx = this.canvas.getContext('2d');
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+
+        let p = this.unit2px([x[0], y[0]]);
+        ctx.moveTo(p[0], p[1]);
+        x.forEach((e, i) => {
+            p = this.unit2px([e, y[i]]);
+            ctx.lineTo(p[0], p[1]);
+        });
+
+        ctx.stroke();
+    }
+
+    setMarker(x, y, color) {
+        let ctx = this.canvas.getContext('2d');
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+
+        let p = this.unit2px([x, y]);
+        ctx.arc(p[0], p[1], 3, 0, 2*Math.PI);
+
+        ctx.fill();
+
+        let px = this.unit2px([x, 0]);
+        let py = this.unit2px([0, y]);
+        drawLine(ctx, p, px, 'grey');
+        drawLine(ctx, p, py, 'grey');
+    }
+
+}
+
+// http://airfoiltools.com/airfoil/details?airfoil=n63015a-il
 function getAirfoilPoints() {
     return [
         [0.000000,  0.000000],
@@ -335,6 +473,7 @@ function getAirfoilPoints() {
   ]
 }
 
+// http://airfoiltools.com/airfoil/details?airfoil=n63015a-il
 function getAirfoilData() 
 { 
     // alpha    CL        CD       CDp       CM     Top_Xtr  Bot_Xtr

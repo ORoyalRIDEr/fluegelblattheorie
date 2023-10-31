@@ -10,7 +10,7 @@
 
 <body>
   <h1>Flügelblatttheorie</h1>
-  
+  <h2>Profil: NACA 63-015 (z.B. R44)</h2>
   <div id="settings">
     <div>
       <div id="AOI">
@@ -24,7 +24,7 @@
         <label>Umfangsgeschwindigkeit</label>
       </div>
       <div id="VdInput">
-        <input type="range" min=-10 max=50 value="10" oninput="draw()"/>
+        <input type="range" min=-50 max=50 value="10" oninput="draw()"/>
         <input disabled class="showValue"/>
         <label>Abwärtsgeschwindigkeit </label>
       </div>
@@ -54,7 +54,21 @@
 
   <script src="./code.js"></script>
 
-  <canvas id="drawCanvas" width="800" height="500" style="border:1px solid black"></canvas>
+  <div>
+    <canvas id="drawCanvas" width="1000" height="400"></canvas>
+  </div>
+  
+  <div id="diagrams">
+    <div id="CL_AOA">
+      <h2>Auftriebsbeiwert über Anstellwinkel</h2>
+      <canvas width="500" height="500" ></canvas>
+    </div>
+    <div id="CL_CD">
+      <h2>Auftriebsbeiwert über Widerstandsbeiwert</h2>
+      <canvas width="500" height="500" ></canvas>
+    </div>
+  </div>
+
 
 </body>
 </html>
