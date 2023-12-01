@@ -9,6 +9,7 @@ addEventListener('load', function(e) {
     drawVecs.Vd = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>d</sub>', 0.7);
     drawVecs.Vu = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>u</sub>', 0.3);
     drawVecs.Veff = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'blue', '<i>V</i><sub>eff</sub>', 0.3);
+    drawVecs.alphaEff = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'red', '<i>α</i><sub>eff</sub>', .98, false);
 
     drawVecs.L = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>A</sub>', 1.05);
     drawVecs.D = new DrawableVector(canvasFig, new Vector(0,0), new Vector(0,0), 'cyan', '<i>F</i><sub>W</sub>', 1.05);
@@ -31,7 +32,7 @@ function draw() {
     document.getElementById('AOI').querySelector('.showValue').value = AOIdeg + '°';
     AOI = AOIdeg/180*Math.PI;
 
-    center = new Vector(600, 300);
+    center = new Vector(600, 350);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawAirfoil(ctx, center, AOI, 4);
@@ -40,7 +41,9 @@ function draw() {
     drawLine(ctx, [center[0], 0], [center[0], canvas.height], 'grey');
     drawLine(ctx, [0, center[1]], [canvas.width, center[1]], 'grey');
 
-    // draw velocities
+    /*
+     *  Draw Velocities
+    */
     let velScale = 3;
 
     /// get inputs
@@ -49,30 +52,56 @@ function draw() {
     document.getElementById('VuInput').querySelector('.showValue').value = VuTrue + ' m/s';
     document.getElementById('VdInput').querySelector('.showValue').value = VdTrue + ' m/s';
 
-    /// create vectors
+    /// create velocity vectors
     let Vu = new Vector(VuTrue * velScale, 0);
     let Vd = new Vector(0, VdTrue * velScale);
     let Veff = Vu.add(Vd);
 
-    /// draw vectors
+    // Coordinate vectors
+    let xb = new Vector(-Math.cos(AOI), -Math.sin(AOI));
+    let xa = Veff.normalized().mult(-1);
+    let za = new Vector(xa[1], -xa[0]);
+    if (false) { // debugging
+        let scale = 500;
+        drawVector(ctx, center, xb.mult(scale), 'grey');
+        drawVector(ctx, center, xa.mult(scale), 'grey');
+        drawVector(ctx, center, za.mult(scale), 'grey');
+    }
+
+    /// draw velocity vectors
+    ctx.lineWidth = 2;
     drawVecs.Vu.newVectorValues(center.add(Vu.mult(-1)), Vu);
     drawVecs.Vd.newVectorValues(center.add(Veff.mult(-1)), Vd);
     drawVecs.Veff.newVectorValues(center.add(Veff.mult(-1)), Veff);
 
     /// draw angle of attack
-    xb = new Vector(-Math.cos(AOI), -Math.sin(AOI));
-    drawVectorNoArrow(ctx, center, xb.mult(500), 'grey');
-    drawVectorNoArrow(ctx, center, xb.mult(500).mult(-1), 'grey');
+    let angleScale = 500;
+    let aoaRadius = Veff.norm()*0.8;
+    let aoaLegendAngeOffset = 2/180*Math.PI;
 
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 15]);
+    drawVectorNoArrow(ctx, center, xb.mult(angleScale), 'grey');
+    drawVectorNoArrow(ctx, center, xb.mult(angleScale).mult(-1), 'grey');
+    ctx.setLineDash([]);
+    /*let alphaEffVecStart = center.add(xb.mult(aoaRadius-aoaLegendOffset));
+    let alphaEffVecEnd = center.add(xa.mult(aoaRadius-aoaLegendOffset));
+    drawVecs.alphaEff.newVectorValues(alphaEffVecStart, alphaEffVecEnd.add(alphaEffVecStart.mult(-1)));*/
+    
+    ctx.lineWidth = 2;
     alphaW = Math.atan2(VdTrue, VuTrue);
     ctx.strokeStyle = 'red';
     ctx.beginPath();
-    ctx.arc(center[0], center[1], Veff.norm()*0.8, Math.PI + alphaW, Math.PI + AOI, (alphaW > AOI));
+    ctx.arc(center[0], center[1], aoaRadius, Math.PI + alphaW, Math.PI + AOI, (alphaW > AOI));
     ctx.stroke();
     AOA = AOI - alphaW;
     document.getElementById('AOA').value = Math.round(AOA*180/Math.PI * 100) / 100 + '°';
+    let aoaLegendAngle = AOA/2 + alphaW - aoaLegendAngeOffset;
+    drawVecs.alphaEff.newVectorValues(center, (new Vector(-Math.cos(aoaLegendAngle), -Math.sin(aoaLegendAngle))).mult(aoaRadius));
 
-    // draw forces
+    /*
+     *  Draw Forces
+    */
     let coeffScale = 250;
     let airfoilData = getAirfoilDataAtAngle(AOA);
 
@@ -106,16 +135,16 @@ function draw() {
 
 
     /// create Vectors
-    let xa = Veff.normalized();
-    let ya = new Vector(xa[1], -xa[0]);
+    ctx.lineWidth = 2;
     
-    let D = xa.mult(CD * coeffScale);
-    let L = ya.mult(CL * coeffScale);
+    let D = xa.mult(- CD * coeffScale);
+    let L = za.mult(- CL * coeffScale);
     let Ra = D.add(L);
     let S = new Vector(0, Ra[1]) ; // Thrust
     let T = new Vector(Ra[0], 0) ; // Tangent Force
 
-    // draw vectors
+    /// draw vectors
+    ctx.lineWidth = 2;
     drawVecs.D.newVectorValues(center, D);
     drawVecs.L.newVectorValues(center, L);
     drawVecs.Ra.newVectorValues(center, Ra);
@@ -123,13 +152,19 @@ function draw() {
     drawVecs.T.newVectorValues(center, T);
 
     /// helper lines
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 10]);
     drawVectorNoArrow(ctx, center.add(L), D, 'grey');
     drawVectorNoArrow(ctx, center.add(D), L, 'grey');
 
     drawVectorNoArrow(ctx, center.add(Ra), [0, -Ra[1]], 'grey');
     drawVectorNoArrow(ctx, center.add(Ra), [-Ra[0], 0], 'grey');
+    ctx.setLineDash([]);
 
-    // draw diagrams
+
+    /*
+     *  Draw Diagrams
+    */
     let airfoilDataAll = getAirfoilData();
     AOAplt = airfoilDataAll.reduce((list, newEl) => list.concat(newEl[0]), []);
     CLplt = airfoilDataAll.reduce((list, newEl) => list.concat(newEl[1]), []);
@@ -260,13 +295,14 @@ class Vector extends Array {
 }
 
 class DrawableVector {
-    constructor(canvas, startPos, vector, color, text, textPos) {
+    constructor(canvas, startPos, vector, color, text, textPos, plotVector = true) {
         this.canvas = canvas;
         this.startPos = startPos;
         this.vector = vector;
         this.color = color;
         this.text = text;
         this.textPos = textPos;
+        this.plotVector = plotVector;
 
         let canvasData = canvas.getBoundingClientRect();
         let bodyData = document.body.getBoundingClientRect();
@@ -291,7 +327,8 @@ class DrawableVector {
         this.textEl.style.top = textPos[1]  + 'px';
 
         //console.log(this.canvasPosVec, startPos, vector, textPos)
-        drawVector(this.canvas.getContext('2d'), startPos, vector, this.color);
+        if (this.plotVector)
+            drawVector(this.canvas.getContext('2d'), startPos, vector, this.color);
     }
 }
 
