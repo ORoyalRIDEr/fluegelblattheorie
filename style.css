@@ -25,6 +25,6 @@ canvas {
     display: inline-block;
 }
 
-#diagrams > div > div {
+div:has(> canvas) {
     position: relative;
 }

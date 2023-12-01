@@ -346,12 +346,10 @@ class DrawableVector {
         this.startPos = startPos;
         this.vector = vector;
 
-        let textPos = this.canvasPosVec.add(startPos).add(vector.mult(this.textPos));
-        //let textPos = this.canvasPosVec;
-        this.textEl.style.left = textPos[0] + 10 + 'px';
-        this.textEl.style.top = textPos[1]  + 'px';
+        let textPos = startPos.add(vector.mult(this.textPos));
+        this.textEl.style.left = textPos[0] +10 + 'px';
+        this.textEl.style.top = textPos[1] -20 + 'px';
 
-        //console.log(this.canvasPosVec, startPos, vector, textPos)
         if (this.plotVector)
             drawVector(this.canvas.getContext('2d'), startPos, vector, this.color);
     }
