@@ -21,6 +21,31 @@ addEventListener('load', function(e) {
     diags.CL_CD = new Diagram(canvasDiagCL_CD, [-0.08, 0.24], [-1.6, 1.6], 0.04, 0.2)
 
     draw();
+
+    // prepare hide button
+    hideButtons = this.document.getElementsByClassName('hide');
+    for (hideButton of hideButtons) {
+        console.log(hideButton);
+        hideButton.innerHTML = 'Darstellung verstecken';
+        hideButton.addEventListener('click', function(e) {
+            let nextSibling = e.srcElement.nextElementSibling;
+            if (nextSibling.hidden) {
+                for (child of e.srcElement.parentElement.childNodes) {
+                    if (child != hideButton)
+                        child.hidden = false;
+                }
+                hideButton.innerHTML = 'Darstellung verstecken';
+            }
+            else {
+                for (child of e.srcElement.parentElement.childNodes) {
+                    if (child != hideButton)
+                        child.hidden = true;
+                }
+                hideButton.innerHTML = 'Darstellung anzeigen';
+            }
+            console.log(e);
+        })
+    }
   });
   
 function draw() {
@@ -374,11 +399,11 @@ class Diagram {
 
             for (let tick of ticks) {
                 let divPosInCanvas = dir == 'x' ? this.unit2px([tick,0]) : this.unit2px([0, tick]);
-                let divPos = this.canvasPos.add(divPosInCanvas);
+                let divPos = divPosInCanvas;
                 let textEl = document.createElement('div');
                 textEl.innerHTML = Number(tick.toFixed(2));
                 textEl.style.position = 'absolute';
-                textEl.style.top = divPos[1] + 'px';
+                textEl.style.top = divPos[1] - 20 + 'px';
                 textEl.style.left = divPos[0] + 'px';
                 this.canvas.parentElement.appendChild(textEl);
             }

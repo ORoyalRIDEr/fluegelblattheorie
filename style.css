@@ -11,10 +11,20 @@ input[type="range"] {
     width: 50px;
 }
 
+.hide {
+    display: block;
+    color: blue;
+    text-decoration: underline;
+}
+
 canvas {
     border:1px solid black;
 }
 
 #diagrams > div {
     display: inline-block;
+}
+
+#diagrams > div > div {
+    position: relative;
 }
